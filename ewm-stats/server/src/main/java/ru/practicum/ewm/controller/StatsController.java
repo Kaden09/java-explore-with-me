@@ -21,6 +21,9 @@ public class StatsController {
 
     @PostMapping("/hit")
     public ResponseEntity<EndpointHitDto> hit(@RequestBody EndpointHitDto hit) {
+        log.info("POST запрос на сохранение hit: app={}, uri={}, ip={}, timestamp={}",
+                hit.getApp(), hit.getUri(), hit.getIp(), hit.getTimestamp());
+
         return ResponseEntity.status(HttpStatus.CREATED).body(statsService.saveHit(hit));
     }
 
@@ -29,6 +32,9 @@ public class StatsController {
                                                     @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
                                                     @RequestParam(required = false) List<String> uris,
                                                     @RequestParam(defaultValue = "false") boolean unique) {
+        log.info("GET запрос на получение статистики: start={}, end={}, uris={}, unique={}",
+                start, end, uris, unique);
+
         return ResponseEntity.status(HttpStatus.OK).body(statsService.getViewStatsList(start, end, uris, unique));
     }
 }

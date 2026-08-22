@@ -23,6 +23,8 @@ public class StatsServiceImpl implements StatsService {
     @Override
     @Transactional
     public EndpointHitDto saveHit(EndpointHitDto hit) {
+        log.debug("Сохранение hit: app={}, uri={}", hit.getApp(), hit.getUri());
+
         EndpointHitModel endpointHit = statsRepository.save(EndpointHitMapper.toEndpointHitModel(hit));
         return EndpointHitMapper.toEndpointHitDto(endpointHit);
     }
@@ -30,6 +32,8 @@ public class StatsServiceImpl implements StatsService {
     @Override
     @Transactional(readOnly = true)
     public List<ViewStats> getViewStatsList(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
+        log.debug("Запрос статистики: start={}, end={}, uris={}, unique={}", start, end, uris, unique);
+
         if (start.isAfter(end)) {
             throw new DateTimeException("Wrong timestamp.");
         }
@@ -47,18 +51,3 @@ public class StatsServiceImpl implements StatsService {
     }
 
 }
-//    @Override
-//    public List<ViewStats> getViewStatsList(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
-//        log.info("Запрос статистики: start={}, end={}, uris={}, unique={}", start, end, uris, unique);
-//
-//        if(start.isAfter(end)) {
-//            throw new IllegalArgumentException("Дата начала не может быть позже даты окончания");
-//        }
-//
-//        if (unique) {
-//            return statRepository.getUniqueStats(start, end, uris);
-//        }
-//
-//        return statRepository.getStats(start, end, uris);
-//    }
-//}

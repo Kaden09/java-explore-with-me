@@ -2,12 +2,14 @@ package ru.practicum.ewm;
 
 import org.springframework.http.*;
 import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class BaseClient {
     protected final RestTemplate restTemplate;
 
