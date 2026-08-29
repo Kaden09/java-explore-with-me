@@ -2,50 +2,66 @@ package ru.practicum.ewm;
 
 import org.springframework.http.*;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-@Component
 public class BaseClient {
-    protected final RestTemplate restTemplate;
 
-    public BaseClient(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    protected final RestClient restClient;
+
+    public BaseClient(RestClient restClient) {
+        this.restClient = restClient;
     }
 
-    protected <T> ResponseEntity<Object> post(T body) {
-        return makeAndSendRequest(HttpMethod.POST, "/hit", null, body);
+    protected <T> ResponseEntity<Object> post(String path, T body) {
+        return makeAndSendRequest(HttpMethod.POST, path, null, body);
     }
 
-    protected <T> ResponseEntity<Object> get(String path, @Nullable Map<String, Object> parameters) {
+    protected ResponseEntity<Object> get(String path, @Nullable Map<String, Object> parameters) {
         return makeAndSendRequest(HttpMethod.GET, path, parameters, null);
     }
 
-    private <T> ResponseEntity<Object> makeAndSendRequest(HttpMethod method, String path, @Nullable Map<String, Object> parameters, @Nullable T body) {
-        HttpEntity<T> requestEntity = new HttpEntity<>(body, defaultHeaders());
-
-        ResponseEntity<Object> exploreWithMeServerResponse;
+    private <T> ResponseEntity<Object> makeAndSendRequest(HttpMethod method, String path,
+                                                          @Nullable Map<String, Object> parameters,
+                                                          @Nullable T body) {
         try {
-            if (parameters != null) {
-                exploreWithMeServerResponse = restTemplate.exchange(path, method, requestEntity, Object.class, parameters);
+            var uriSpec = restClient.method(method)
+                    .uri(uriBuilder -> {
+                        uriBuilder.path(path);
+                        if (parameters != null) {
+                            parameters.forEach((key, value) -> {
+                                if (value instanceof Collection<?> collection) {
+                                    collection.forEach(item -> uriBuilder.queryParam(key, item));
+                                } else {
+                                    uriBuilder.queryParam(key, value);
+                                }
+                            });
+                        }
+                        return uriBuilder.build();
+                    })
+                    .headers(headers -> {
+                        headers.setContentType(MediaType.APPLICATION_JSON);
+                        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+                    });
+
+            ResponseEntity<Object> response;
+            if (body != null) {
+                response = ((RestClient.RequestBodyUriSpec) uriSpec)
+                        .body(body)
+                        .retrieve()
+                        .toEntity(Object.class);
             } else {
-                exploreWithMeServerResponse = restTemplate.exchange(path, method, requestEntity, Object.class);
+                response = uriSpec.retrieve().toEntity(Object.class);
             }
-        } catch (HttpStatusCodeException e) {
+
+            return prepareResponse(response);
+        } catch (RestClientResponseException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsByteArray());
         }
-        return prepareResponse(exploreWithMeServerResponse);
-    }
-
-    private HttpHeaders defaultHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        return headers;
     }
 
     private static ResponseEntity<Object> prepareResponse(ResponseEntity<Object> response) {
