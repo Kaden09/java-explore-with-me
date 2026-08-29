@@ -88,10 +88,11 @@ public class EventServiceImpl implements EventService {
 
         if (dto.getStateAction() != null) {
             StateActionPrivate action = StateActionPrivate.valueOf(dto.getStateAction());
-            event.setState(switch (action) {
+            State newState = switch (action) {
                 case SEND_TO_REVIEW -> State.PENDING;
                 case CANCEL_REVIEW -> State.CANCELED;
-            });
+            };
+            event.setState(newState);
         }
 
         return toEventFullDto(eventRepository.save(event));
@@ -105,13 +106,14 @@ public class EventServiceImpl implements EventService {
         if (dto.getStateAction() != null) {
             StateActionAdmin action = StateActionAdmin.valueOf(dto.getStateAction());
             validateStateTransition(event, action);
-            event.setState(switch (action) {
+            State newState = switch (action) {
                 case PUBLISH_EVENT -> {
                     event.setPublishedOn(LocalDateTime.now());
                     yield State.PUBLISHED;
                 }
                 case REJECT_EVENT -> State.CANCELED;
-            });
+            };
+            event.setState(newState);
         }
 
         applyUpdate(event, dto);
