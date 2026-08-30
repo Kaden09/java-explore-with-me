@@ -52,6 +52,7 @@ public class EventServiceImpl implements EventService {
     final LocationRepository locationRepository;
     final RequestRepository requestRepository;
     final StatsClient statsClient;
+    final ObjectMapper mapper;
 
     @Value("${app}")
     String app;
@@ -427,7 +428,6 @@ public class EventServiceImpl implements EventService {
             return Collections.emptyMap();
         }
 
-        ObjectMapper mapper = new ObjectMapper();
         List<ViewStats> stats;
         try {
             stats = mapper.convertValue(response.getBody(), new TypeReference<>() {
